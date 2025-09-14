@@ -28,10 +28,4 @@ The goal is to empower farmers with **localized, AI-driven guidance** that impro
 
 ---
 
-## 📂 Project Setup  
-
-### 1. Clone the repository  
-```bash
-git clone https://github.com/your-username/krishi-sakhi.git
-cd krishi-sakhi
 
