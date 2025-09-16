@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Krishi Mitra</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+        .text-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app"></div>
+
+    <div id="modal-container" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
+        <div id="modal-content" class="bg-white rounded-lg p-6 shadow-xl max-w-sm w-full">
+            <h3 id="modal-title" class="text-xl font-bold mb-4"></h3>
+            <p id="modal-message" class="text-gray-700 mb-6"></p>
+            <button id="modal-ok-btn" class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        let currentScreen = 'login';
+        let user = null;
+        let showMobileMenu = false;
+        let activeTab = 'weather';
+        let chatMessages = [];
+        let currentMessage = '';
+        let showChatbot = false;
+        let currentFlashcard = 0;
+        let loginData = { name: '', phone: '', otp: '' };
+        let loginStep = 'details';
+        let language = 'malayalam'; // 'english' or 'malayalam'
+        let currentLocation = 'Kochi, Kerala';
+
+        // Language content
+        const content = {
+            english: {
+                appName: 'Krishi Mitra',
+                subtitle: 'AI Assistant for Kerala Farmers',
+                welcome: 'Welcome',
+                welcomeMessage: 'Welcome to Krishi Mitra. We are ready to help you in your farming journey.',
+                continue: 'Continue',
+                login: 'Login',
+                name: 'Name',
+                phone: 'Phone Number',
+                enterName: 'Enter your name',
+                enterPhone: '10 digit phone number',
+                sendOTP: 'Send OTP',
+                otpSent: 'OTP sent to',
+                enterOTP: '6 digit OTP',
+                verifyLogin: 'Verify and Login',
+                or: 'or',
+                googleLogin: 'Login with Google',
+                invalidOTP: 'Invalid OTP. Please try again',
+                flashcards: [
+                    {
+                        title: 'Personalized Advice',
+                        content: 'AI-powered personalized farming advice by analyzing your location, crop, and soil conditions',
+                        icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-8 h-8"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`
+                    },
+                    {
+                        title: 'Data-Driven Decisions',
+                        content: 'Track farming activities and help learn from previous seasons for better decisions',
+                        icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-8 h-8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`
+                    },
+                    {
+                        title: 'Accessibility',
+                        content: 'Conversational interface in English and Malayalam (voice and text) accessible to all farmers',
+                        icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-8 h-8"><path d="m3 21 1.9-5.7a4.9 4.9 0 0 1 .7-2.9 8.5 8.5 0 0 1 2.2-2.4c.5-.4 1-.7 1.6-1a10.4 10.4 0 0 0 1-1.1c.3-.3.5-1.2.8-2.6l.3-.8c.2-.5 1-1.7 2-2.5h-5"/><path d="M7.5 12.5h-5A.5.5 0 0 1 2 12V6a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-.5.5z"/><path d="M12.5 17.5h-5A.5.5 0 0 1 7 17V11a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-.5.5z"/><path d="M17.5 22.5h-5A.5.5 0 0 1 12 22V16a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-.5.5z"/></svg>`
+                    },
+                    {
+                        title: 'Real-time Information',
+                        content: 'Real-time updates on weather, pest control, and market prices',
+                        icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-8 h-8"><path d="M17.5 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Z"/><path d="M22 12a10 10 0 1 1-10-10"/></svg>`
+                    },
+                    {
+                        title: 'Sustainable Farming',
+                        content: 'Promotes eco-friendly farming practices and ensures optimal use of resources',
+                        icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-8 h-8"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 18.2 8.3 22 12c-2.4 2.1-5.1 3.2-8.5 3.2-1.9 0-3.8-.5-5.6-1.5-.9-.5-1.7-1.2-2.5-2"/><path d="M2 13.5a14 14 0 0 0 7 7c1 0 2-.4 3-1"/><path d="M11 18a14.2 14.2 0 0 0 6.5 2.5c2.3 0 4.5-1 6.5-3.5"/></svg>`
+                    }
+                ],
+                next: 'Next',
+                start: 'Let\'s Start',
+                tabs: {
+                    weather: 'Weather',
+                    soil: 'Soil',
+                    crops: 'Crops',
+                    market: 'Market',
+                    schemes: 'Schemes'
+                },
+                weather: {
+                    title: 'Today\'s Weather',
+                    location: 'Location',
+                    getLocation: 'Get My Location',
+                    humidity: 'Humidity',
+                    rainfall: 'Rainfall',
+                    forecast: 'Forecast',
+                    alerts: 'Alerts',
+                    alertMessages: [
+                        'Heavy rain expected - Protect crops',
+                        'High humidity - Watch for fungal diseases'
+                    ]
+                },
+                soil: {
+                    title: 'Soil Quality',
+                    subtitle: 'Current condition of your soil',
+                    ph: 'pH Value',
+                    nitrogen: 'Nitrogen',
+                    phosphorus: 'Phosphorus',
+                    potassium: 'Potassium',
+                    recommendations: 'Recommendations',
+                    recList: [
+                        'Add phosphorus fertilizer',
+                        'Use organic manure',
+                        'Test soil every 6 months'
+                    ]
+                },
+                crops: {
+                    title: 'Crop Calendar',
+                    subtitle: 'Crops to plant now',
+                    season: 'Season',
+                    months: 'Months',
+                    cropData: [
+                        { crop: 'Rice', season: 'Monsoon', months: 'June-September', status: 'Excellent' },
+                        { crop: 'Pepper', season: 'Pre-monsoon', months: 'May-June', status: 'Good' },
+                        { crop: 'Cardamom', season: 'Year-round', months: 'Anytime', status: 'Excellent' },
+                        { crop: 'Rubber', season: 'Year-round', months: 'Anytime', status: 'Good' }
+                    ]
+                },
+                market: {
+                    title: 'Market Prices',
+                    subtitle: 'Today\'s market rates',
+                    marketData: [
+                        { item: 'Rice', price: '₹25/kg', change: '+5%', trend: 'up' },
+                        { item: 'Pepper', price: '₹450/kg', change: '-2%', trend: 'down' },
+                        { item: 'Cardamom', price: '₹1200/kg', change: '+8%', trend: 'up' },
+                        { item: 'Coconut', price: '₹30/piece', change: 'Stable', trend: 'same' }
+                    ]
+                },
+                schemes: {
+                    title: 'Government Schemes',
+                    subtitle: 'Schemes available for you',
+                    schemeData: [
+                        {
+                            name: 'PM-KISAN',
+                            amount: '₹6000/year',
+                            description: 'Pradhan Mantri Kisan Samman Nidhi',
+                            status: 'Eligible'
+                        },
+                        {
+                            name: 'Krishi Sinchai Yojana',
+                            amount: '75% Subsidy',
+                            description: 'Support for irrigation development',
+                            status: 'Can Apply'
+                        },
+                        {
+                            name: 'Soil Health Card',
+                            amount: 'Free',
+                            description: 'Soil testing and recommendations',
+                            status: 'Available'
+                        }
+                    ]
+                },
+                chatbot: {
+                    title: 'Krishi Mitra',
+                    placeholder: 'Type your question...',
+                    initialMessage: 'Hello! I am Krishi Mitra. I am here to help with your farming related questions!',
+                    responses: [
+                        'Your question is very good. Let me collect more information and provide an answer.',
+                        'According to the weather, now is the right time to plant rice.',
+                        'The soil pH is 6.2. This is suitable for most crops.',
+                        'We recommend using organic methods for pest control.'
+                    ]
+                },
+                footer: {
+                    description: 'AI-powered smart farming assistant for farmers in Kerala',
+                    links: 'Important Links',
+                    legal: 'Legal',
+                    linkItems: [
+                        'Weather Information',
+                        'Crop Guidelines',
+                        'Market Prices',
+                        'Government Schemes'
+                    ],
+                    legalItems: [
+                        'About Us',
+                        'Terms and Conditions',
+                        'Privacy Policy',
+                        'Support'
+                    ],
+                    copyright: '© 2025 Krishi Mitra. All rights reserved. Developed by Green Innovators Team.'
+                }
+            },
+            malayalam: {
+                appName: 'കൃഷി മിത്ര',
+                subtitle: 'കേരളത്തിലെ കർഷകർക്കുള്ള AI സഹായി',
+                welcome: 'സ്വാഗതം',
+                welcomeMessage: 'കൃഷി മിത്രയിലേക്ക് സ്വാഗതം. നിങ്ങളുടെ കൃഷി യാത്രയിൽ ഞങ്ങൾ സഹായിക്കാൻ തയ്യാറാണ്.',
+                continue: 'തുടരുക',
+                login: 'ലോഗിൻ',
+                name: 'പേര്',
+                phone: 'ഫോൺ നമ്പർ',
+                enterName: 'നിങ്ങളുടെ പേര് എഴുതുക',
+                enterPhone: '10 അക്ക ഫോൺ നമ്പർ',
+                sendOTP: 'OTP അയയ്ക്കുക',
+                otpSent: 'OTP അയച്ചു',
+                enterOTP: '6 അക്ക OTP',
+                verifyLogin: 'പരിശോധിച്ച് പ്രവേശിക്കുക',
+                or: 'അല്ലെങ്കിൽ',
+                googleLogin: 'Google ഉപയോഗിച്ച് പ്രവേശിക്കുക',
+                invalidOTP: 'തെറ്റായ OTP. ദയവായി വീണ്ടും ശ്രമിക്കുക',
+                flashcards: [
+                    {
+                        title: 'വ്യക്തിഗത ഉപദേശം',
+                        content: 'നിങ്ങളുടെ സ്ഥലം, വിള, മണ്ണ് എന്നിവ വിശകലനം ചെയ്ത് AI ഉപയോഗിച്ച് വ്യക്തിഗതമാക്കിയ കൃഷി ഉപദേശം നൽകുന്നു',
+                        icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-8 h-8"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`
+                    },
+                    {
+                        title: 'ഡാറ്റാ അടിസ്ഥാന തീരുമാനങ്ങൾ',
+                        content: 'കൃഷി പ്രവർത്തനങ്ങൾ ട്രാക്ക് ചെയ്യുകയും മുൻ സീസണുകളിൽ നിന്ന് പഠിക്കാൻ സഹായിക്കുകയും ചെയ്യുന്നു',
+                        icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-8 h-8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`
+                    },
+                    {
+                        title: 'പ്രവേശനക്ഷമത',
+                        content: 'മലയാളത്തിലുള്ള സംഭാഷണ ഇന്റർഫേസ് (വോയ്സും ടെക്സ്റ്റും) എല്ലാ കർഷകർക്കും ഉപയോഗിക്കാവുന്നതാണ്',
+                        icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-8 h-8"><path d="m3 21 1.9-5.7a4.9 4.9 0 0 1 .7-2.9 8.5 8.5 0 0 1 2.2-2.4c.5-.4 1-.7 1.6-1a10.4 10.4 0 0 0 1-1.1c.3-.3.5-1.2.8-2.6l.3-.8c.2-.5 1-1.7 2-2.5h-5"/><path d="M7.5 12.5h-5A.5.5 0 0 1 2 12V6a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-.5.5z"/><path d="M12.5 17.5h-5A.5.5 0 0 1 7 17V11a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-.5.5z"/><path d="M17.5 22.5h-5A.5.5 0 0 1 12 22V16a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-.5.5z"/></svg>`
+                    },
+                    {
+                        title: 'തത്സമയ വിവരങ്ങൾ',
+                        content: 'കാലാവസ്ഥ, കീട നിയന്ത്രണം, വിപണി വിലകൾ എന്നിവയുടെ തത്സമയ അപ്ഡേറ്റുകൾ',
+                        icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-8 h-8"><path d="M17.5 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Z"/><path d="M22 12a10 10 0 1 1-10-10"/></svg>`
+                    },
+                    {
+                        title: 'സുസ്ഥിര കൃഷി',
+                        content: 'പാരിസ്ഥിതിക സൗഹൃദ കൃഷി രീതികൾ പ്രോത്സാഹിപ്പിക്കുകയും വിഭവങ്ങളുടെ ഒപ്റ്റിമൽ ഉപയോഗം ഉറപ്പാക്കുകയും ചെയ്യുന്നു',
+                        icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-8 h-8"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 18.2 8.3 22 12c-2.4 2.1-5.1 3.2-8.5 3.2-1.9 0-3.8-.5-5.6-1.5-.9-.5-1.7-1.2-2.5-2"/><path d="M2 13.5a14 14 0 0 0 7 7c1 0 2-.4 3-1"/><path d="M11 18a14.2 14.2 0 0 0 6.5 2.5c2.3 0 4.5-1 6.5-3.5"/></svg>`
+                    }
+                ],
+                next: 'അടുത്തത്',
+                start: 'ആരംഭിക്കാം',
+                tabs: {
+                    weather: 'കാലാവസ്ഥ',
+                    soil: 'മണ്ണ്',
+                    crops: 'വിളകൾ',
+                    market: 'വിപണി',
+                    schemes: 'പദ്ധതികൾ'
+                },
+                weather: {
+                    title: 'ഇന്നത്തെ കാലാവസ്ഥ',
+                    location: 'സ്ഥലം',
+                    getLocation: 'എൻ്റെ സ്ഥലം അറിയുക',
+                    humidity: 'ആർദ്രത',
+                    rainfall: 'മഴ',
+                    forecast: 'പ്രവചനം',
+                    alerts: 'മുന്നറിയിപ്പുകൾ',
+                    alertMessages: [
+                        'ശക്തമായ മഴയ്ക്ക് സാധ്യത - വിള സംരക്ഷിക്കുക',
+                        'ഉയർന്ന ആർദ്രത - ഫംഗസ് രോഗങ്ങൾക്ക് ശ്രദ്ധിക്കുക'
+                    ]
+                },
+                soil: {
+                    title: 'മണ്ണിന്റെ ഗുണമേന്മ',
+                    subtitle: 'നിങ്ങളുടെ മണ്ണിന്റെ നിലവിലെ അവസ്ഥ',
+                    ph: 'pH മൂല്യം',
+                    nitrogen: 'നൈട്രജൻ',
+                    phosphorus: 'ഫോസ്ഫറസ്',
+                    potassium: 'പൊട്ടാസിയം',
+                    recommendations: 'ശുപാർശകൾ',
+                    recList: [
+                        'ഫോസ്ഫറസ് വളം ചേർക്കുക',
+                        'ജൈവ വളം ഉപയോഗിക്കുക',
+                        'മണ്ണ് പരിശോധന 6 മാസത്തിൽ ഒരിക്കൽ നടത്തുക'
+                    ]
+                },
+                crops: {
+                    title: 'വിള കലണ്ടർ',
+                    subtitle: 'ഇപ്പോൾ നടാവുന്ന വിളകൾ',
+                    season: 'സീസൺ',
+                    months: 'മാസങ്ങൾ',
+                    cropData: [
+                        { crop: 'നെല്ല്', season: 'മൺസൂൺ', months: 'ജൂൺ-സെപ്റ്റംബർ', status: 'ഉത്തമം' },
+                        { crop: 'കുരുമുളക്', season: 'മൺസൂൺ മുൻപ്', months: 'മേയ്-ജൂൺ', status: 'നല്ലത്' },
+                        { crop: 'കാർഡമം', season: 'വർഷം മുഴുവൻ', months: 'എപ്പോഴും', status: 'ഉത്തമം' },
+                        { crop: 'റബ്ബർ', season: 'വർഷം മുഴുവൻ', months: 'എപ്പോഴും', status: 'നല്ലത്' }
+                    ]
+                },
+                market: {
+                    title: 'വിപണി വിലകൾ',
+                    subtitle: 'ഇന്നത്തെ വിപണി നിരക്കുകൾ',
+                    marketData: [
+                        { item: 'നെല്ല്', price: '₹25/കിലോ', change: '+5%', trend: 'up' },
+                        { item: 'കുരുമുളക്', price: '₹450/കിലോ', change: '-2%', trend: 'down' },
+                        { item: 'കാർഡമം', price: '₹1200/കിലോ', change: '+8%', trend: 'up' },
+                        { item: 'തേങ്ങ', price: '₹30/എണ്ണം', change: 'സ്ഥിരം', trend: 'same' }
+                    ]
+                },
+                schemes: {
+                    title: 'സർക്കാർ പദ്ധതികൾ',
+                    subtitle: 'നിങ്ങൾക്കായുള്ള പദ്ധതികൾ',
+                    schemeData: [
+                        {
+                            name: 'PM-KISAN',
+                            amount: '₹6000/year',
+                            description: 'പ്രധാനമന്ത്രി കിസാൻ സമ്മാൻ നിധി',
+                            status: 'യോഗ്യത ഉണ്ട്'
+                        },
+                        {
+                            name: 'ക്രിഷി സിഞ്ചായി യോജന',
+                            amount: '75% സബ്സിഡി',
+                            description: 'നേര്‍വാര്‍ത്തനത്തിനുള്ള സഹായം',
+                            status: 'അപേക്ഷിക്കാം'
+                        },
+                        {
+                            name: 'മണ്ണ് ആരോഗ്യ കാർഡ്',
+                            amount: 'സൗജന്യം',
+                            description: 'മണ്ണ് പരിശോധനയും ശുപാർശയും',
+                            status: 'ലഭ്യമാണ്'
+                        }
+                    ]
+                },
+                chatbot: {
+                    title: 'കൃഷി മിത്ര',
+                    placeholder: 'നിങ്ങളുടെ ചോദ്യം ടൈപ്പ് ചെയ്യുക...',
+                    initialMessage: 'നമസ്കാരം! ഞാൻ കൃഷി മിത്രയാണ്. നിങ്ങളുടെ കൃഷി സംബന്ധമായ ചോദ്യങ്ങൾക്ക് സഹായിക്കാൻ ഞാൻ ഇവിടെയുണ്ട്!',
+                    responses: [
+                        'നിങ്ങളുടെ ചോദ്യം വളരെ നല്ലതാണ്. ഇതിനെക്കുറിച്ച് കൂടുതൽ വിവരങ്ങൾ ശേഖരിച്ച് മറുപടി നൽകാം.',
+                        'കാലാവസ്ഥ അനുസരിച്ച് ഇപ്പോൾ നെല്ല് നടാനുള്ള അനുയോജ്യമായ സമയമാണ്.',
+                        'മണ്ണിന്റെ pH 6.2 ആണ്. ഇത് മിക്ക വിളകൾക്കും അനുയോജ്യമാണ്.',
+                        'കീടനിയന്ത്രണത്തിനായി ജൈവ മാർഗങ്ങൾ ഉപയോഗിക്കാൻ ശുപാർശ ചെയ്യുന്നു.'
+                    ]
+                },
+                footer: {
+                    description: 'കേരളത്തിലെ കർഷകർക്കായുള്ള AI-പവേർഡ് സ്മാർട്ട് ഫാർമിംഗ് അസിസ്റ്റന്റ്',
+                    links: 'പ്രധാന കണ്ണികൾ',
+                    legal: 'നിയമപരമായ',
+                    linkItems: [
+                        'കാലാവസ്ഥ വിവരങ്ങൾ',
+                        'വിള മാർഗ്ഗനിർദ്ദേശങ്ങൾ',
+                        'വിപണി വിലകൾ',
+                        'സർക്കാർ പദ്ധതികൾ'
+                    ],
+                    legalItems: [
+                        'ഞങ്ങളെക്കുറിച്ച്',
+                        'നിബന്ധനകളും വ്യവസ്ഥകളും',
+                        'സ്വകാര്യതാ നയം',
+                        'പിന്തുണ'
+                    ],
+                    copyright: '© 2025 കൃഷി മിത്ര. എല്ലാ അവകാശങ്ങളും സുരക്ഷിതം. Green Innovators ടീം വികസിപ്പിച്ചത്.'
+                }
+            }
+        };
+
+        const weatherData = {
+            temperature: '28°C',
+            humidity: '85%',
+            rainfall: '12mm',
+            forecast: 'Rain expected'
+        };
+        const soilData = {
+            ph: '6.2',
+            nitrogen: 'Medium',
+            phosphorus: 'Low',
+            potassium: 'High',
+            organicMatter: '2.8%'
+        };
+
+        function showModal(title, message) {
+            const modalContainer = document.getElementById('modal-container');
+            const modalTitle = document.getElementById('modal-title');
+            const modalMessage = document.getElementById('modal-message');
+            const modalOkBtn = document.getElementById('modal-ok-btn');
+
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            modalContainer.classList.remove('hidden');
+
+            modalOkBtn.onclick = () => {
+                modalContainer.classList.add('hidden');
+            };
+        }
+
+        function getLiveLocation() {
+            const locationDisplay = document.getElementById('location-display');
+            if (!locationDisplay) {
+                return;
+            }
+            locationDisplay.textContent = '...loading';
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const { latitude, longitude } = position.coords;
+                        currentLocation = `Lat: ${latitude.toFixed(2)}, Lon: ${longitude.toFixed(2)}`;
+                        renderApp();
+                    },
+                    (error) => {
+                        console.error('Geolocation Error:', error);
+                        let errorMessage = 'Unable to get your location.';
+                        if (error.code === 1) {
+                            errorMessage = 'Please allow location access to use this feature.';
+                        }
+                        showModal('Location Error', errorMessage);
+                        currentLocation = 'Kochi, Kerala'; // Revert to default
+                        renderApp();
+                    }
+                );
+            } else {
+                showModal('Location Not Supported', 'Geolocation is not supported by your browser.');
+                currentLocation = 'Kochi, Kerala'; // Revert to default
+                renderApp();
+            }
+        }
+
+        function toggleLanguage() {
+            language = language === 'english' ? 'malayalam' : 'english';
+            weatherData.forecast = language === 'english' ? 'Rain expected' : 'മഴയ്ക്ക് സാധ്യത';
+            soilData.nitrogen = language === 'english' ? 'Medium' : 'ഇടത്തരം';
+            soilData.phosphorus = language === 'english' ? 'Low' : 'കുറവ്';
+            soilData.potassium = language === 'english' ? 'High' : 'ഉയർന്നത്';
+            chatMessages = [{ type: 'bot', message: content[language].chatbot.initialMessage }];
+            renderApp();
+        }
+
+        function handleLogin() {
+            const t = content[language];
+            if (loginStep === 'details' && loginData.name && loginData.phone.length === 10) {
+                loginStep = 'otp';
+                setTimeout(() => {
+                    showModal('OTP', `${t.otpSent}: 123456`);
+                }, 1000);
+            } else if (loginStep === 'otp' && loginData.otp === '123456') {
+                user = { name: loginData.name, phone: loginData.phone };
+                currentScreen = 'greeting';
+            } else if (loginStep === 'otp') {
+                showModal('Error', t.invalidOTP);
+            } else {
+                showModal('Error', 'Please enter a valid name and phone number.');
+            }
+            renderApp();
+        }
+
+        function handleGoogleLogin() {
+            user = { name: 'Google User' };
+            currentScreen = 'greeting';
+            renderApp();
+        }
+
+        function nextFlashcard() {
+            if (currentFlashcard < content[language].flashcards.length - 1) {
+                currentFlashcard++;
+            } else {
+                currentScreen = 'home';
+            }
+            renderApp();
+        }
+
+        function sendMessage() {
+            const t = content[language];
+            const messageInput = document.getElementById('message-input');
+            const userMessage = messageInput.value.trim();
+            if (!userMessage) return;
+
+            chatMessages.push({ type: 'user', message: userMessage });
+            messageInput.value = '';
+            updateChatbox();
+
+            setTimeout(() => {
+                const randomResponse = t.chatbot.responses[Math.floor(Math.random() * t.chatbot.responses.length)];
+                chatMessages.push({ type: 'bot', message: randomResponse });
+                updateChatbox();
+            }, 1000);
+        }
+
+        function updateChatbox() {
+            const chatBody = document.getElementById('chat-body');
+            if (!chatBody) return;
+            const t = content[language];
+            chatBody.innerHTML = chatMessages.map(msg => `
+                <div class="flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}">
+                    <div class="max-w-xs p-3 rounded-lg ${msg.type === 'user' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-800'}">
+                        <p class="text-sm">${msg.message}</p>
+                    </div>
+                </div>
+            `).join('');
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+
+        function renderLanguageToggle() {
+            const t = content[language];
+            return `
+                <div class="relative">
+                    <button id="lang-toggle-btn" class="flex items-center gap-2 px-3 py-2 bg-white/20 backdrop-blur rounded-lg text-white hover:bg-white/30 transition duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20Z"/><path d="M2 12h20"/></svg>
+                        <span class="text-sm font-medium">
+                            ${language === 'english' ? 'EN' : 'ML'}
+                        </span>
+                    </button>
+                </div>
+            `;
+        }
+
+        function renderLoginScreen() {
+            const t = content[language];
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center p-4">
+                    <div class="absolute top-4 right-4">${renderLanguageToggle()}</div>
+                    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+                        <div class="text-center mb-8">
+                            <div class="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-8 h-8 text-green-600"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 18.2 8.3 22 12c-2.4 2.1-5.1 3.2-8.5 3.2-1.9 0-3.8-.5-5.6-1.5-.9-.5-1.7-1.2-2.5-2"/><path d="M2 13.5a14 14 0 0 0 7 7c1 0 2-.4 3-1"/><path d="M11 18a14.2 14.2 0 0 0 6.5 2.5c2.3 0 4.5-1 6.5-3.5"/></svg>
+                            </div>
+                            <h1 class="text-2xl font-bold text-gray-800">${t.appName}</h1>
+                            <p class="text-gray-600 mt-2">${t.subtitle}</p>
+                        </div>
+                        ${loginStep === 'details' ? `
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">${t.name}</label>
+                                <input id="name-input" type="text" value="${loginData.name}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="${t.enterName}"/>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">${t.phone}</label>
+                                <div class="flex">
+                                    <span class="inline-flex items-center px-3 py-3 border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm rounded-l-lg">+91</span>
+                                    <input id="phone-input" type="tel" value="${loginData.phone}" class="flex-1 px-4 py-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="${t.enterPhone}" maxLength="10"/>
+                                </div>
+                            </div>
+                            <button id="login-btn" class="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition duration-200 font-medium">${t.sendOTP}</button>
+                        </div>` : `
+                        <div class="space-y-4">
+                            <div class="text-center">
+                                <p class="text-gray-600 mb-4">${t.otpSent} ${loginData.phone}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">OTP</label>
+                                <input id="otp-input" type="text" value="${loginData.otp}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-center text-lg tracking-widest" placeholder="${t.enterOTP}" maxLength="6"/>
+                            </div>
+                            <button id="login-btn" class="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition duration-200 font-medium">${t.verifyLogin}</button>
+                        </div>`}
+                        <div class="mt-6">
+                            <div class="relative">
+                                <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-300"></div></div>
+                                <div class="relative flex justify-center text-sm"><span class="px-2 bg-white text-gray-500">${t.or}</span></div>
+                            </div>
+                            <button id="google-login-btn" class="mt-4 w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-200 font-medium flex items-center justify-center gap-2">
+                                <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                                ${t.googleLogin}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderGreetingScreen() {
+            const t = content[language];
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center p-4">
+                    <div class="absolute top-4 right-4">${renderLanguageToggle()}</div>
+                    <div class="bg-white rounded-2xl shadow-2xl p-8 text-center max-w-md w-full">
+                        <div class="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-10 h-10 text-green-600"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 18.2 8.3 22 12c-2.4 2.1-5.1 3.2-8.5 3.2-1.9 0-3.8-.5-5.6-1.5-.9-.5-1.7-1.2-2.5-2"/><path d="M2 13.5a14 14 0 0 0 7 7c1 0 2-.4 3-1"/><path d="M11 18a14.2 14.2 0 0 0 6.5 2.5c2.3 0 4.5-1 6.5-3.5"/></svg>
+                        </div>
+                        <h1 class="text-3xl font-bold text-gray-800 mb-4">${t.welcome}, ${user?.name}!</h1>
+                        <p class="text-gray-600 mb-8">${t.welcomeMessage}</p>
+                        <button id="continue-btn" class="bg-green-600 text-white py-3 px-8 rounded-lg hover:bg-green-700 transition duration-200 font-medium">${t.continue}</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderFlashcardsScreen() {
+            const t = content[language];
+            const currentCard = t.flashcards[currentFlashcard];
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center p-4">
+                    <div class="absolute top-4 right-4">${renderLanguageToggle()}</div>
+                    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+                        <div class="flex justify-between items-center mb-6">
+                            <div class="flex space-x-2">
+                                ${t.flashcards.map((_, index) => `<div class="w-3 h-3 rounded-full ${index <= currentFlashcard ? 'bg-green-500' : 'bg-gray-300'}"></div>`).join('')}
+                            </div>
+                            <span class="text-sm text-gray-500">${currentFlashcard + 1}/${t.flashcards.length}</span>
+                        </div>
+                        <div class="text-center">
+                            <div class="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600">
+                                ${currentCard.icon}
+                            </div>
+                            <h2 class="text-2xl font-bold text-gray-800 mb-4">${currentCard.title}</h2>
+                            <p class="text-gray-600 mb-8 leading-relaxed">${currentCard.content}</p>
+                        </div>
+                        <button id="flashcard-next-btn" class="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition duration-200 font-medium">
+                            ${currentFlashcard === t.flashcards.length - 1 ? t.start : t.next}
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderHomeHeader() {
+            const t = content[language];
+            return `
+                <header class="bg-white shadow-sm border-b">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div class="flex items-center justify-between h-16">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-green-100 p-2 rounded-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-green-600"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 18.2 8.3 22 12c-2.4 2.1-5.1 3.2-8.5 3.2-1.9 0-3.8-.5-5.6-1.5-.9-.5-1.7-1.2-2.5-2"/><path d="M2 13.5a14 14 0 0 0 7 7c1 0 2-.4 3-1"/><path d="M11 18a14.2 14.2 0 0 0 6.5 2.5c2.3 0 4.5-1 6.5-3.5"/></svg>
+                                </div>
+                                <div>
+                                    <h1 class="text-xl font-bold text-gray-800">${t.appName}</h1>
+                                    <p class="text-sm text-gray-500">Hello, ${user?.name}!</p>
+                                </div>
+                            </div>
+                            <div class="hidden md:flex items-center gap-4">
+                                ${renderLanguageToggle().replace('bg-white/20', 'bg-gray-100 text-gray-800').replace('text-white', 'text-gray-800').replace('hover:bg-white/30', 'hover:bg-gray-200')}
+                                <button class="text-gray-600 hover:text-gray-800">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.39a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.43.25a2 2 0 0 1-2 0z"/><circle cx="12" cy="12" r="3"/></svg>
+                                </button>
+                                <div class="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white font-medium">
+                                    ${user?.name?.charAt(0)}
+                                </div>
+                            </div>
+                            <button id="mobile-menu-btn" class="md:hidden text-gray-600 hover:text-gray-800">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </header>
+                <nav class="bg-white border-b">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div class="flex space-x-8 overflow-x-auto">
+                            ${[
+                                { id: 'weather', label: t.tabs.weather, icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M17.5 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Z"/><path d="M22 12a10 10 0 1 1-10-10"/></svg>` },
+                                { id: 'soil', label: t.tabs.soil, icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 18.2 8.3 22 12c-2.4 2.1-5.1 3.2-8.5 3.2-1.9 0-3.8-.5-5.6-1.5-.9-.5-1.7-1.2-2.5-2"/><path d="M2 13.5a14 14 0 0 0 7 7c1 0 2-.4 3-1"/><path d="M11 18a14.2 14.2 0 0 0 6.5 2.5c2.3 0 4.5-1 6.5-3.5"/></svg>` },
+                                { id: 'crops', label: t.tabs.crops, icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="4"/><line x1="8" x2="8" y1="2" y2="4"/><line x1="3" x2="21" y1="9" y2="9"/></svg>` },
+                                { id: 'market', label: t.tabs.market, icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>` },
+                                { id: 'schemes', label: t.tabs.schemes, icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>` }
+                            ].map(tab => `
+                                <button data-tab-id="${tab.id}" class="tab-btn flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.id ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700'}">
+                                    ${tab.icon}
+                                    ${tab.label}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                </nav>
+            `;
+        }
+
+        function renderWeatherTab() {
+            const t = content[language];
+            return `
+                <div class="space-y-6">
+                    <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-semibold">${t.weather.title}</h3>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M12 2C8.686 2 6 4.686 6 8s6 14 6 14s6-10.314 6-14c0-3.314-2.686-6-6-6z"/><circle cx="12" cy="8" r="3"/></svg>
+                        </div>
+                        <p id="location-display" class="text-blue-100 mb-2">${currentLocation}</p>
+                        <div class="flex items-center gap-4">
+                            <div class="text-3xl font-bold">${weatherData.temperature}</div>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-8 h-8"><circle cx="12" cy="12" r="6"/><line x1="12" x2="12" y1="2" y2="4"/><line x1="12" x2="12" y1="20" y2="22"/><line x1="4.22" x2="5.64" y1="4.22" y2="5.64"/><line x1="18.36" x2="19.78" y1="18.36" y2="19.78"/><line x1="2" x2="4" y1="12" y2="12"/><line x1="20" x2="22" y1="12" y2="12"/><line x1="4.22" x2="5.64" y1="19.78" y2="18.36"/><line x1="18.36" x2="19.78" y1="5.64" y2="4.22"/></svg>
+                        </div>
+                        <button id="get-location-btn" class="mt-4 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition duration-200">
+                            ${t.weather.getLocation}
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-white p-4 rounded-lg shadow">
+                            <div class="flex items-center gap-2 mb-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-blue-500"><path d="M12 2v2"/><path d="m19.7 4.3-.7.7"/><path d="M22 12h-2"/><path d="m19.7 19.7-.7-.7"/><path d="M12 22v-2"/><path d="m4.3 19.7.7-.7"/><path d="M2 12h2"/><path d="m4.3 4.3.7.7"/></svg>
+                                <span class="font-medium">${t.weather.humidity}</span>
+                            </div>
+                            <p class="text-2xl font-bold text-gray-800">${weatherData.humidity}</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow">
+                            <div class="flex items-center gap-2 mb-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-gray-500"><path d="M17.5 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Z"/><path d="M22 12a10 10 0 1 1-10-10"/></svg>
+                                <span class="font-medium">${t.weather.rainfall}</span>
+                            </div>
+                            <p class="text-2xl font-bold text-gray-800">${weatherData.rainfall}</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow">
+                            <div class="flex items-center gap-2 mb-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-yellow-500"><circle cx="12" cy="12" r="6"/><line x1="12" x2="12" y1="2" y2="4"/><line x1="12" x2="12" y1="20" y2="22"/><line x1="4.22" x2="5.64" y1="4.22" y2="5.64"/><line x1="18.36" x2="19.78" y1="18.36" y2="19.78"/><line x1="2" x2="4" y1="12" y2="12"/><line x1="20" x2="22" y1="12" y2="12"/><line x1="4.22" x2="5.64" y1="19.78" y2="18.36"/><line x1="18.36" x2="19.78" y1="5.64" y2="4.22"/></svg>
+                                <span class="font-medium">${t.weather.forecast}</span>
+                            </div>
+                            <p class="text-lg text-gray-800">${weatherData.forecast}</p>
+                        </div>
+                    </div>
+                    <div class="bg-orange-50 border-l-4 border-orange-400 p-4 rounded">
+                        <h4 class="font-semibold text-orange-800 mb-2 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="m21.73 18.23-10-17a2 2 0 0 0-3.46 0l-10 17a2 2 0 0 0 1.73 2.77h20a2 2 0 0 0 1.73-2.77z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                            ${t.weather.alerts}
+                        </h4>
+                        <ul class="space-y-1">
+                            ${t.weather.alertMessages.map(alert => `<li class="text-orange-700">${alert}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderSoilTab() {
+            const t = content[language];
+            return `
+                <div class="space-y-6">
+                    <div class="bg-gradient-to-r from-amber-500 to-amber-600 rounded-xl p-6 text-white">
+                        <h3 class="text-xl font-semibold mb-2">${t.soil.title}</h3>
+                        <p class="text-amber-100">${t.soil.subtitle}</p>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-white p-4 rounded-lg shadow text-center">
+                            <div class="text-sm text-gray-600 mb-1">${t.soil.ph}</div>
+                            <div class="text-2xl font-bold text-gray-800">${soilData.ph}</div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow text-center">
+                            <div class="text-sm text-gray-600 mb-1">${t.soil.nitrogen}</div>
+                            <div class="text-lg font-semibold text-gray-800">${soilData.nitrogen}</div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow text-center">
+                            <div class="text-sm text-gray-600 mb-1">${t.soil.phosphorus}</div>
+                            <div class="text-lg font-semibold text-gray-800">${soilData.phosphorus}</div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow text-center">
+                            <div class="text-sm text-gray-600 mb-1">${t.soil.potassium}</div>
+                            <div class="text-lg font-semibold text-gray-800">${soilData.potassium}</div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h4 class="font-semibold text-gray-800 mb-4">${t.soil.recommendations}</h4>
+                        <ul class="space-y-2">
+                            ${t.soil.recList.map(rec => `
+                                <li class="flex items-start gap-2">
+                                    <div class="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                                    <span class="text-gray-700">${rec}</span>
+                                </li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderCropTab() {
+            const t = content[language];
+            return `
+                <div class="space-y-6">
+                    <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-6 text-white">
+                        <h3 class="text-xl font-semibold mb-2">${t.crops.title}</h3>
+                        <p class="text-green-100">${t.crops.subtitle}</p>
+                    </div>
+                    <div class="space-y-4">
+                        ${t.crops.cropData.map(crop => `
+                            <div class="bg-white p-4 rounded-lg shadow">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-green-500"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 18.2 8.3 22 12c-2.4 2.1-5.1 3.2-8.5 3.2-1.9 0-3.8-.5-5.6-1.5-.9-.5-1.7-1.2-2.5-2"/><path d="M2 13.5a14 14 0 0 0 7 7c1 0 2-.4 3-1"/><path d="M11 18a14.2 14.2 0 0 0 6.5 2.5c2.3 0 4.5-1 6.5-3.5"/></svg>
+                                        <h4 class="font-semibold text-gray-800">${crop.crop}</h4>
+                                    </div>
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium ${crop.status === 'Excellent' || crop.status === 'ഉത്തമം' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                                        ${crop.status}
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                                    <div>
+                                        <span class="font-medium">${t.crops.season}:</span> ${crop.season}
+                                    </div>
+                                    <div>
+                                        <span class="font-medium">${t.crops.months}:</span> ${crop.months}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderMarketTab() {
+            const t = content[language];
+            return `
+                <div class="space-y-6">
+                    <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+                        <h3 class="text-xl font-semibold mb-2">${t.market.title}</h3>
+                        <p class="text-purple-100">${t.market.subtitle}</p>
+                    </div>
+                    <div class="space-y-4">
+                        ${t.market.marketData.map(item => `
+                            <div class="bg-white p-4 rounded-lg shadow">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h4 class="font-semibold text-gray-800">${item.item}</h4>
+                                        <p class="text-2xl font-bold text-gray-900">${item.price}</p>
+                                    </div>
+                                    <div class="text-right ${item.trend === 'up' ? 'text-green-600' : item.trend === 'down' ? 'text-red-600' : 'text-gray-600'}">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 ${item.trend === 'down' ? 'transform rotate-180' : ''}"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                                        <span class="text-sm font-medium">${item.change}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderSchemeTab() {
+            const t = content[language];
+            return `
+                <div class="space-y-6">
+                    <div class="bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-xl p-6 text-white">
+                        <h3 class="text-xl font-semibold mb-2">${t.schemes.title}</h3>
+                        <p class="text-indigo-100">${t.schemes.subtitle}</p>
+                    </div>
+                    <div class="space-y-4">
+                        ${t.schemes.schemeData.map(scheme => `
+                            <div class="bg-white p-4 rounded-lg shadow">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h4 class="font-semibold text-gray-800">${scheme.name}</h4>
+                                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">${scheme.status}</span>
+                                </div>
+                                <p class="text-gray-600 text-sm mb-2">${scheme.description}</p>
+                                <p class="font-semibold text-indigo-600">${scheme.amount}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderChatbot() {
+            const t = content[language];
+            const chatboxClass = showChatbot ? 'w-80 h-96' : 'w-auto h-auto';
+            return `
+                <div id="chatbot-container" class="fixed bottom-4 right-4 ${chatboxClass} transition-all duration-300 z-50">
+                    ${!showChatbot ? `
+                        <button id="chatbot-toggle-btn" class="bg-green-600 text-white p-4 rounded-full shadow-lg hover:bg-green-700 transition duration-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        </button>` : `
+                        <div class="bg-white rounded-lg shadow-2xl border overflow-hidden">
+                            <div class="bg-green-600 text-white p-4 flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M12 8V4H8"/><path d="M12 16V20H8"/><path d="M8 8H4"/><path d="M8 16H4"/><path d="M16 8H20"/><path d="M16 16H20"/><path d="M12 12H16"/><path d="M12 12V8"/><path d="M12 12V16"/></svg>
+                                    <span class="font-medium">${t.chatbot.title}</span>
+                                </div>
+                                <button id="chatbot-close-btn" class="text-white hover:text-gray-200">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                                </button>
+                            </div>
+                            <div id="chat-body" class="h-64 overflow-y-auto p-4 space-y-3"></div>
+                            <div class="p-4 border-t">
+                                <div class="flex gap-2">
+                                    <input id="message-input" type="text" placeholder="${t.chatbot.placeholder}" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"/>
+                                    <button id="send-btn" class="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700 transition duration-200">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="m22 2-7 18-4-8-8-4 18-7Z"/><path d="M22 2 11 13"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>`}
+                </div>
+            `;
+        }
+        
+        function renderHomeFooter() {
+            const t = content[language];
+            return `
+                <footer class="bg-white border-t mt-16">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            <div>
+                                <div class="flex items-center gap-2 mb-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-green-600"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 18.2 8.3 22 12c-2.4 2.1-5.1 3.2-8.5 3.2-1.9 0-3.8-.5-5.6-1.5-.9-.5-1.7-1.2-2.5-2"/><path d="M2 13.5a14 14 0 0 0 7 7c1 0 2-.4 3-1"/><path d="M11 18a14.2 14.2 0 0 0 6.5 2.5c2.3 0 4.5-1 6.5-3.5"/></svg>
+                                    <h3 class="text-lg font-semibold text-gray-800">${t.appName}</h3>
+                                </div>
+                                <p class="text-gray-600 text-sm">${t.footer.description}</p>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-800 mb-4">${t.footer.links}</h4>
+                                <ul class="space-y-2 text-sm text-gray-600">
+                                    ${t.footer.linkItems.map(item => `<li><a href="#" class="hover:text-green-600 transition-colors">${item}</a></li>`).join('')}
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-800 mb-4">${t.footer.legal}</h4>
+                                <ul class="space-y-2 text-sm text-gray-600">
+                                    ${t.footer.legalItems.map(item => `<li><a href="#" class="hover:text-green-600 transition-colors">${item}</a></li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="border-t mt-8 pt-8 text-center text-sm text-gray-500">
+                            <p>${t.footer.copyright}</p>
+                        </div>
+                    </div>
+                </footer>
+            `;
+        }
+
+        function renderHome() {
+            let mainContent = '';
+            const t = content[language];
+            if (activeTab === 'weather') mainContent = renderWeatherTab();
+            if (activeTab === 'soil') mainContent = renderSoilTab();
+            if (activeTab === 'crops') mainContent = renderCropTab();
+            if (activeTab === 'market') mainContent = renderMarketTab();
+            if (activeTab === 'schemes') mainContent = renderSchemeTab();
+
+            return `
+                <div class="min-h-screen bg-gray-50">
+                    ${renderHomeHeader()}
+                    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        ${mainContent}
+                    </main>
+                    ${renderHomeFooter()}
+                    ${renderChatbot()}
+                </div>
+            `;
+        }
+
+        function renderApp() {
+            const appDiv = document.getElementById('app');
+            let contentToRender = '';
+
+            if (currentScreen === 'login') {
+                contentToRender = renderLoginScreen();
+            } else if (currentScreen === 'greeting') {
+                contentToRender = renderGreetingScreen();
+            } else if (currentScreen === 'flashcards') {
+                contentToRender = renderFlashcardsScreen();
+            } else if (currentScreen === 'home') {
+                contentToRender = renderHome();
+            }
+
+            appDiv.innerHTML = contentToRender;
+            attachEventListeners();
+        }
+
+        function attachEventListeners() {
+            const t = content[language];
+            // Language toggle
+            const langToggleBtn = document.getElementById('lang-toggle-btn');
+            if (langToggleBtn) {
+                langToggleBtn.onclick = toggleLanguage;
+            }
+
+            // Login Screen
+            const nameInput = document.getElementById('name-input');
+            const phoneInput = document.getElementById('phone-input');
+            const otpInput = document.getElementById('otp-input');
+            const loginBtn = document.getElementById('login-btn');
+            const googleLoginBtn = document.getElementById('google-login-btn');
+
+            if (nameInput) nameInput.oninput = (e) => { loginData.name = e.target.value; };
+            if (phoneInput) phoneInput.oninput = (e) => { loginData.phone = e.target.value; };
+            if (otpInput) otpInput.oninput = (e) => { loginData.otp = e.target.value; };
+            if (loginBtn) loginBtn.onclick = handleLogin;
+            if (googleLoginBtn) googleLoginBtn.onclick = handleGoogleLogin;
+
+            // Greeting Screen
+            const continueBtn = document.getElementById('continue-btn');
+            if (continueBtn) {
+                continueBtn.onclick = () => {
+                    currentScreen = 'flashcards';
+                    renderApp();
+                };
+            }
+
+            // Flashcards Screen
+            const flashcardNextBtn = document.getElementById('flashcard-next-btn');
+            if (flashcardNextBtn) {
+                flashcardNextBtn.onclick = nextFlashcard;
+            }
+
+            // Home Screen Tabs
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            tabButtons.forEach(btn => {
+                btn.onclick = (e) => {
+                    const newTab = e.currentTarget.dataset.tabId;
+                    activeTab = newTab;
+                    renderApp();
+                };
+            });
+
+            // Chatbot
+            const chatbotToggleBtn = document.getElementById('chatbot-toggle-btn');
+            if (chatbotToggleBtn) {
+                chatbotToggleBtn.onclick = () => {
+                    showChatbot = true;
+                    renderApp();
+                    updateChatbox();
+                };
+            }
+            const chatbotCloseBtn = document.getElementById('chatbot-close-btn');
+            if (chatbotCloseBtn) {
+                chatbotCloseBtn.onclick = () => {
+                    showChatbot = false;
+                    renderApp();
+                };
+            }
+            const sendBtn = document.getElementById('send-btn');
+            if (sendBtn) {
+                sendBtn.onclick = sendMessage;
+                const messageInput = document.getElementById('message-input');
+                messageInput.onkeypress = (e) => {
+                    if (e.key === 'Enter') {
+                        sendMessage();
+                    }
+                };
+            }
+
+            // Geolocation button
+            const getLocationBtn = document.getElementById('get-location-btn');
+            if (getLocationBtn) {
+                getLocationBtn.onclick = getLiveLocation;
+            }
+        }
+
+        window.onload = function() {
+            renderApp();
+            // Initial chatbot message
+            chatMessages = [{ type: 'bot', message: content[language].chatbot.initialMessage }];
+        };
+    </script>
+</body>
+</html>
