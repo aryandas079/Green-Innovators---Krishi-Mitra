@@ -90,6 +90,18 @@ class OfficerEscalation(BaseModel):
     status: str = "pending"  # pending, assigned, resolved
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+# Translation Models
+class TranslationRequest(BaseModel):
+    text: str
+    source_language: str  # "english", "hindi", "malayalam"
+    target_language: str  # "english", "hindi", "malayalam"
+
+class TranslationResponse(BaseModel):
+    original_text: str
+    translated_text: str
+    source_language: str
+    target_language: str
+
 # Helper functions
 def get_farming_system_message(farmer_profile=None):
     base_message = """You are an AI farming assistant for Malayalam-speaking farmers in Kerala, India. 
