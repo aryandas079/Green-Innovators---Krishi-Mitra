@@ -43,7 +43,7 @@ It provides **personalized guidance, weather alerts, crop planning, soil insight
 
 ## 📂 Project Setup  
 
-### 1. Clone the Repository  
+### Clone the Repository  
 ```bash
 git clone https://github.com/your-username/krishi-sakhi.git
 cd krishi-sakhi
