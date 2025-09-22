@@ -161,6 +161,34 @@ async def get_ai_response(message: str, farmer_id: str, session_id: str, image_d
         logging.error(f"AI response error: {str(e)}")
         return "I'm sorry, I'm having trouble processing your request right now. Please try again or contact an agriculture officer for immediate assistance."
 
+async def translate_text(text: str, source_lang: str, target_lang: str):
+    """Translate text using Emergent LLM"""
+    try:
+        # Create translation prompt
+        translation_prompt = f"""Translate the following text from {source_lang} to {target_lang}. 
+        Provide only the translated text without any additional commentary or explanation.
+        
+        Text to translate: {text}
+        
+        Translation:"""
+        
+        # Initialize chat for translation
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"translation_{uuid.uuid4()}",
+            system_message="You are a professional translator. Provide accurate translations without any additional text."
+        ).with_model("openai", "gpt-4o-mini")
+        
+        # Get translation
+        user_message = UserMessage(text=translation_prompt)
+        response = await chat.send_message(user_message)
+        
+        return response.strip()
+        
+    except Exception as e:
+        logging.error(f"Translation error: {str(e)}")
+        return f"Translation failed: {str(e)}"
+
 # API Routes
 @api_router.get("/")
 async def root():
