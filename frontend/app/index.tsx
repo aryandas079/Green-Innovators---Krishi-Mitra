@@ -86,6 +86,16 @@ export default function FarmingAssistantHome() {
                     </Card.Content>
                   </Card>
                 </Link>
+
+                <Link href="/translator" asChild>
+                  <Card style={styles.actionCard} mode="outlined">
+                    <Card.Content style={styles.cardContent}>
+                      <Ionicons name="language" size={32} color={theme.colors.primary} />
+                      <Text style={styles.cardTitle}>Translator</Text>
+                      <Text style={styles.cardSubtitle}>अनुवादक / വിവർത്തകൻ</Text>
+                    </Card.Content>
+                  </Card>
+                </Link>
               </View>
             </View>
 
@@ -100,6 +110,20 @@ export default function FarmingAssistantHome() {
                       <Text style={styles.featureTitle}>Malayalam Support</Text>
                       <Text style={styles.featureDescription}>
                         മലയാളത്തിൽ ചോദ്യങ്ങൾ ചോദിക്കാം
+                      </Text>
+                    </View>
+                  </View>
+                </Card.Content>
+              </Card>
+
+              <Card style={styles.featureCard} mode="outlined">
+                <Card.Content>
+                  <View style={styles.featureRow}>
+                    <Ionicons name="globe" size={24} color={theme.colors.primary} />
+                    <View style={styles.featureText}>
+                      <Text style={styles.featureTitle}>Language Translation</Text>
+                      <Text style={styles.featureDescription}>
+                        English ↔ Hindi ↔ Malayalam translation / अनुवाद सेवा
                       </Text>
                     </View>
                   </View>
