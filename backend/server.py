@@ -336,6 +336,27 @@ async def get_farmer_escalations(farmer_id: str):
     escalations = await db.escalations.find({"farmer_id": farmer_id}).to_list(20)
     return [OfficerEscalation(**esc) for esc in escalations]
 
+# Translation Route
+@api_router.post("/translate", response_model=TranslationResponse)
+async def translate_text_endpoint(translation_request: TranslationRequest):
+    try:
+        translated_text = await translate_text(
+            translation_request.text,
+            translation_request.source_language,
+            translation_request.target_language
+        )
+        
+        return TranslationResponse(
+            original_text=translation_request.text,
+            translated_text=translated_text,
+            source_language=translation_request.source_language,
+            target_language=translation_request.target_language
+        )
+        
+    except Exception as e:
+        logging.error(f"Translation endpoint error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Translation failed")
+
 # Include the router in the main app
 app.include_router(api_router)
 
